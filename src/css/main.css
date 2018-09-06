@@ -1,6 +1,7 @@
 *{
     box-sizing: border-box;
     outline: none;
+    transition: all .3s ease-in-out;
 }
 
 html,body,#app{
@@ -22,6 +23,7 @@ body{
     background-position: center;
     background-size: cover;
     background-attachment: fixed;
+    animation: body-grad 5s ease-in-out infinite;
 }
 
 .container{
@@ -116,8 +118,30 @@ body{
     text-align: center;
 }
 
+.fade-in{
+	animation: fade-in .2s ease-in-out;
+}
 .fade-in-up{
 	animation: fade-in-up .2s ease-in-out;
+}
+
+.spinner{
+    margin: 20px auto;
+    width: 20px;
+    height: 20px;
+    border-radius: 100%;
+    border: 3px solid rgba(0,0,0,0.5);
+    border-top: 3px solid transparent;
+    animation: spin .3s linear infinite;
+}
+
+@keyframes fade-in{
+    from{
+        opacity: 0;
+    }
+    to{
+        opacity: 1;
+    }
 }
 
 @keyframes fade-in-up{
@@ -128,6 +152,15 @@ body{
     to{
         opacity: 1;
         transform: none;
+    }
+}
+
+@keyframes spin{
+    from{
+        transform:rotate(0deg);
+    }
+    to{
+        transform: rotate(360deg);
     }
 }
 
