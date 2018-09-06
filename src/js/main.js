@@ -114,7 +114,7 @@ var RestSearch = createReactClass({
                             <input className="input text" placeholder="Tell me your cravings" onChange={this.handleChange} />
                         </div>
                         <div className="input-group">
-                            <button className="input button" onClick={this.getRest}>Get Restaurant</button>
+                            <button className="input button" onClick={this.getRest}>Feeling Lucky!s</button>
                         </div>
                     </div>
                     <div className="fade-in" style={{display: this.state.isLocation ? 'none' : 'block'}}>
