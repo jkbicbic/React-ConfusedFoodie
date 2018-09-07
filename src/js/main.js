@@ -6,7 +6,6 @@ var checkLoc;
 function getLocation() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(showPosition);
-        //loading
 
     } else { 
         x.innerHTML = "Geolocation is not supported by this browser.";
@@ -14,11 +13,8 @@ function getLocation() {
 }
 
 function showPosition(position) {
-    console.log(position);
     city.lat= position.coords.latitude;
     city.lon= position.coords.longitude;
-    console.log(city);
-    //turn off loading
 }
 
 function getData(url){
@@ -30,60 +26,40 @@ function getData(url){
     .then(response => response.json());
 }
 
-function Result(result){
-    console.log(result);
+function ReShuffle(props){
     return(
-        <div className="card fade-in-up">
-            <div className="result-group" >
-                <div className="img">
-                    <img src={result.defaultValue.featured_image}/>
-                </div>
-            </div>
-            <div className="result-group">
-                <div className="store name">
-                    <h3>{result.defaultValue.name}</h3>
-                </div>
-                <div className="store location">
-                    <p>{result.defaultValue.location.address}</p>
-                </div>
-                <div className="store rating" style={{backgroundColor: `#${result.defaultValue.user_rating.rating_color}`}}>
-                    <p>{result.defaultValue.user_rating.aggregate_rating}</p>
-                    <p>votes {result.defaultValue.user_rating.votes}</p>
-                </div>
+        <div className="card card--transparent" style={{display: props.value ? 'block' : 'none'}}>
+            <div className="input-group">
+                <button className="input button btn-reverse" onClick={props.onClick}>Suggest More!</button>
             </div>
         </div>
     )
 }
 
+
+
 var RestSearch = createReactClass({
+
     getInitialState: function() {
-        return {result: null, res: null, search: null, isLocation: false}
+        return {result: null, 
+                search: {
+                    srch: '', 
+                    isSearchShown: true
+                }, 
+                result: {
+                    res: null, 
+                    isResultShown: false}
+                }
     },
-
-    handleChange: function(e){
-        this.setState({search: e.target.value})
-    },
-
-    // showInput: function(){
-    //     if(city.lat != 0 && city.lon != 0){ 
-    //         this.setState({isLocation: !this.state.isLocation})
-    //         console.log(this.state.isLocation);
-    //     }
-    //     else{
-    //         console.log("false");
-    //     }
-    // },
 
     getRest: function(){
-        getData(ZOMATO_API+this.state.search+'&count=1&lat='+city.lat+'&lon='+city.lon)
+        this.setState({search: {isSearchShown: false}});
+        this.setState({result: {isResultShown: false}});
+        getData(ZOMATO_API+this.state.search.srch+'&count=1&lat='+city.lat+'&lon='+city.lon)
         .then(data => {
-            var results;
-            this.setState({result: results});
             data.restaurants.map(restaurant => {
-                results = restaurant.restaurant;
+                this.setState({result: {res: restaurant.restaurant, isResultShown: true}});
             });
-            this.setState({res: <Result defaultValue={results}/>});
-            console.log();
         })
     },
 
@@ -91,40 +67,91 @@ var RestSearch = createReactClass({
         getLocation();
     },
 
+    render: function(){
+        return(
+            <div className="container">
+                <RestInput onChange={this.onChange} onClick={this.getRest} value={this.state.search}/>
+                <RestResult defaultValue={this.state.result}/>
+                <ReShuffle onClick={this.getRest} value={this.state.result.isResultShown} />
+            </div>
+        )
+    }
+})
+
+var RestResult = createReactClass({
+    
+    getInitialState: function(){
+        return {isShown: false}
+    },
+
+    render: function(){
+        var result = this.props.defaultValue;
+        return(
+            <div className="card fade-in-up" style={{display: result.isResultShown ? 'block' : 'none'}}>
+                <div className="result-group" >
+                    <div className="img">
+                        <img src={result.res ? result.res.featured_image : ''}/>
+                    </div>
+                </div>
+                <div className="result-group">
+                    <div className="store name">
+                        <h3>{result.res ? result.res.name : 'Name'}</h3>
+                    </div>
+                    <div className="store location">
+                        <p>{result.res ? result.res.location.address : 'Location'}</p>
+                    </div>
+                    <div className="store rating" style={{backgroundColor: `#${result.res ? result.res.user_rating.rating_color:'000'}`}}>
+                        <p>{result.res ? result.res.user_rating.aggregate_rating : '5'}</p>
+                        <p>votes {result.res ? result.res.user_rating.votes : '1'}</p>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+})
+
+var RestInput = createReactClass({
+
+    getInitialState: function(){
+        return {isLocation: false, search: ""}
+    },
+
     componentDidMount: function() {
         checkLoc = setInterval(()=>{
             if(city.lat != 0 && city.lon != 0){ 
                 this.setState({isLocation: true})
-                console.log(this.state.isLocation);
                 clearInterval(checkLoc);
             }
         }, 3000);
     },
 
+    handleChange: function(e){
+        this.setState({search: e.target.value});
+    },
+    
     render: function(){
+        var search = this.props.value;
+        search.srch = this.state.search;
         return(
-            <div className="container">
-                <div className="card fade-in-up">
-                    <div className="fade-in" style={{display: this.state.isLocation ? 'block' : 'none'}}>
-                        <div className="input-group">
-                            <img className="logo" src="src/img/ConfusedFoodie.png"/>
-                            <p style={{textAlign: 'center'}}>i'll choose for you</p>
-                        </div>
-                        <div className="input-group">
-                            <input className="input text" placeholder="Tell me your cravings" onChange={this.handleChange} />
-                        </div>
-                        <div className="input-group">
-                            <button className="input button" onClick={this.getRest}>Feeling Lucky!s</button>
-                        </div>
+            <div className="card fade-in-up"  style={{display: search.isSearchShown ? 'block' : 'none'}}>
+                <div className="fade-in" style={{display: this.state.isLocation ? 'block' : 'none'}}>
+                    <div className="input-group">
+                        <img className="logo" src="src/img/ConfusedFoodie.png"/>
+                        <p style={{textAlign: 'center'}}>i'll choose for you</p>
                     </div>
-                    <div className="fade-in" style={{display: this.state.isLocation ? 'none' : 'block'}}>
-                        <div className="input-group">
-                            <h4 style={{textAlign: 'center'}}>getting your location</h4>
-                            <div className="spinner"></div>
-                        </div>
+                    <div className="input-group">
+                        <input className="input text" placeholder="Tell me your cravings" onChange={this.handleChange} value={this.state.search}/>
+                    </div>
+                    <div className="input-group">
+                        <button className="input button" onClick={this.props.onClick}>Feeling Lucky!</button>
                     </div>
                 </div>
-                {this.state.res}
+                <div className="fade-in" style={{display: this.state.isLocation ? 'none' : 'block'}}>
+                    <div className="input-group">
+                        <h4 style={{textAlign: 'center'}}>getting your location</h4>
+                        <div className="spinner"></div>
+                    </div>
+                </div>
             </div>
         )
     }
