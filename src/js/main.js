@@ -1,4 +1,4 @@
-const ZOMATO_API = "https://developers.zomato.com/api/v2.1/search?entity_type=city&q=";
+const ZOMATO_API = "https://developers.zomato.com/api/v2.1/";
 const API_KEY = "b044c4f4639ec622f10cf4e25714eb8a";
 var city = {lat: 0, lon: 0};
 var checkLoc;
@@ -26,42 +26,44 @@ function getData(url){
     .then(response => response.json());
 }
 
-function ReShuffle(props){
-    return(
-        <div className="card card--transparent" style={{display: props.value ? 'block' : 'none'}}>
-            <div className="input-group">
-                <button className="input button btn-reverse" onClick={props.onClick}>Suggest More!</button>
-            </div>
-        </div>
-    )
-}
-
-
 
 var RestSearch = createReactClass({
 
     getInitialState: function() {
-        return {result: null, 
-                search: {
-                    srch: '', 
-                    isSearchShown: true
-                }, 
-                result: {
-                    res: null, 
-                    isResultShown: false}
-                }
+        return {
+            search: {
+                srch: '', 
+                isSearchShown: true
+            }, 
+            result: {
+                res: ['17272778'], 
+                isResultShown: false,
+                traverseId: 0
+            },
+        }
     },
 
-    getRest: function(){
+    getRestId: function(){
         this.setState({search: {isSearchShown: false}});
         this.setState({result: {isResultShown: false}});
-        getData(ZOMATO_API+this.state.search.srch+'&count=1&lat='+city.lat+'&lon='+city.lon)
+        getData(ZOMATO_API+'search?entity_type=city&q='+this.state.search.srch+'&count=10&lat='+city.lat+'&lon='+city.lon+'&sort=rating&order=desc')
         .then(data => {
-            data.restaurants.map(restaurant => {
-                this.setState({result: {res: restaurant.restaurant, isResultShown: true}});
+            console.log(data);
+            var resId = [];
+            data.restaurants.forEach((restaurant) => {
+                resId.push(restaurant.restaurant.id);
             });
+            console.log("resId: "+ resId);
+            this.setState({result: {res: resId, isResultShown: true, traverseId: 0}});
         })
     },
+
+    Traverse: function(id){
+        var result = Object.assign({}, this.state.result);    //creating copy of object
+        result.traverseId = id;                        //updating value
+        this.setState({result});
+    },
+
 
     componentWillMount: function() {
         getLocation();
@@ -70,9 +72,34 @@ var RestSearch = createReactClass({
     render: function(){
         return(
             <div className="container">
-                <RestInput onChange={this.onChange} onClick={this.getRest} value={this.state.search}/>
+                <RestInput onClick={this.getRestId} value={this.state.search}/>
                 <RestResult defaultValue={this.state.result}/>
-                <ReShuffle onClick={this.getRest} value={this.state.result.isResultShown} />
+                <Traverse updateTraverse={this.Traverse} value={this.state.result}/>
+            </div>
+        )
+    }
+})
+
+var Traverse = createReactClass({
+
+    getInitialState: function(){
+        return {traverseId: 0}
+    },
+
+    handleTraverse: function(){
+        console.log("here");
+        this.props.updateTraverse(this.state.traverseId);
+        this.setState({traverseId: this.state.traverseId + 1})
+    },
+
+    render: function(){
+        var value = this.props.value;
+        value.traverseId = this.state.traverseId;
+        return(
+            <div className="card card--transparent" style={{display: value.isResultShown ? 'block' : 'none'}}>
+                <div className="input-group">
+                    <button className="input button btn-reverse" onClick={this.handleTraverse}>Suggest More!</button>
+                </div>
             </div>
         )
     }
@@ -81,28 +108,46 @@ var RestSearch = createReactClass({
 var RestResult = createReactClass({
     
     getInitialState: function(){
-        return {isShown: false}
+        return {isShown: false, restaurant: null}
+    },
+
+    getRestDetails: function(resId){
+        console.log(resId);
+        getData(ZOMATO_API+'restaurant?res_id='+resId)
+        .then(data => {
+            console.log(data);
+            var r = data;
+            this.setState({restaurant: r})
+        })
+    },
+
+    componentWillMount: function(){
+        var id = this.props.defaultValue.traverseId;
+        this.getRestDetails(this.props.defaultValue.res[id]);
     },
 
     render: function(){
         var result = this.props.defaultValue;
+        // var rest = this.state.restaurant;
+        console.log(result);
+        this.getRestDetails(this.props.defaultValue.res[this.props.defaultValue.traverseId]);
         return(
             <div className="card fade-in-up" style={{display: result.isResultShown ? 'block' : 'none'}}>
                 <div className="result-group" >
                     <div className="img">
-                        <img src={result.res ? result.res.featured_image : ''}/>
+                        <img src={this.state.restaurant ? this.state.restaurant.featured_image : ''}/>
                     </div>
                 </div>
                 <div className="result-group">
                     <div className="store name">
-                        <h3>{result.res ? result.res.name : 'Name'}</h3>
+                        <h3>{this.state.restaurant ? this.state.restaurant.name : 'Name'}</h3>
                     </div>
                     <div className="store location">
-                        <p>{result.res ? result.res.location.address : 'Location'}</p>
+                        <p>{this.state.restaurant ? this.state.restaurant.location.address : 'Location'}</p>
                     </div>
-                    <div className="store rating" style={{backgroundColor: `#${result.res ? result.res.user_rating.rating_color:'000'}`}}>
-                        <p>{result.res ? result.res.user_rating.aggregate_rating : '5'}</p>
-                        <p>votes {result.res ? result.res.user_rating.votes : '1'}</p>
+                    <div className="store rating" style={{backgroundColor: `#${this.state.restaurant ? this.state.restaurant.user_rating.rating_color:'000'}`}}>
+                        <p>{this.state.restaurant ? this.state.restaurant.user_rating.aggregate_rating : '5'}</p>
+                        <p>votes {this.state.restaurant ? this.state.restaurant.user_rating.votes : '1'}</p>
                     </div>
                 </div>
             </div>
