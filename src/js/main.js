@@ -1,4 +1,4 @@
-const ZOMATO_API = "https://developers.zomato.com/api/v2.1/search?entity_type=city&q=";
+const ZOMATO_API = "https://developers.zomato.com/api/v2.1/";
 const API_KEY = "b044c4f4639ec622f10cf4e25714eb8a";
 var city = {lat: 0, lon: 0};
 var checkLoc;
@@ -26,41 +26,73 @@ function getData(url){
     .then(response => response.json());
 }
 
-function ReShuffle(props){
-    return(
-        <div className="card card--transparent" style={{display: props.value ? 'block' : 'none'}}>
-            <div className="input-group">
-                <button className="input button btn-reverse" onClick={props.onClick}>Suggest More!</button>
-            </div>
-        </div>
-    )
-}
-
-
 
 var RestSearch = createReactClass({
 
     getInitialState: function() {
-        return {result: null, 
-                search: {
-                    srch: '', 
-                    isSearchShown: true
-                }, 
-                result: {
-                    res: null, 
-                    isResultShown: false}
-                }
+        return {
+            search: {
+                srch: '', 
+                isSearchShown: true
+            }, 
+            result: {
+                res: [], 
+                resDetail: null,
+                isResultShown: false,
+                traverseId: 0
+            },
+            resComponent:  null
+        }
     },
 
-    getRest: function(){
+    getRestId: function(){
         this.setState({search: {isSearchShown: false}});
-        this.setState({result: {isResultShown: false}});
-        getData(ZOMATO_API+this.state.search.srch+'&count=1&lat='+city.lat+'&lon='+city.lon)
+        getData(ZOMATO_API+'search?entity_type=city&q='+this.state.search.srch+'&count=10&lat='+city.lat+'&lon='+city.lon+'&sort=rating&order=desc')
         .then(data => {
-            data.restaurants.map(restaurant => {
-                this.setState({result: {res: restaurant.restaurant, isResultShown: true}});
+            console.log(data);
+            var resId = [];
+            data.restaurants.forEach((restaurant) => {
+                resId.push(restaurant.restaurant.id);
             });
+            var result = Object.assign({}, this.state.result);
+            result.res = resId;
+            result.isResultShown = true;
+            this.setState({result: result});
+
+            this.getRestDetails(this.state.result.res[this.state.result.traverseId]);
         })
+    },
+
+    getRestDetails: function(resId){
+        console.log(resId);
+        getData(ZOMATO_API+'restaurant?res_id='+resId)
+        .then(data => {
+            console.log(data);
+            var r = data;
+            var result = Object.assign({}, this.state.result); 
+            result.isResultShown = true;  
+            result.resDetail = r;                        
+            this.setState({result: result});
+            console.log(this.state.result)
+            this.setState({resComponent: <RestResult defaultValue={this.state.result}/>});
+        })
+    },
+
+    traverseRestaurantIds: function(){
+        var result = Object.assign({}, this.state.result);
+        result.isResultShown = false;
+        if(result.traverseId == result.res.length){
+            console.log("here")
+            result.traverseId = 0; 
+            this.setState({result: result});
+            this.getRestDetails(this.state.result.res[result.traverseId]);
+        }
+        else{
+            result.traverseId = result.traverseId + 1; 
+            this.setState({result: result});
+            this.getRestDetails(this.state.result.res[result.traverseId]);
+        }                       
+        
     },
 
     componentWillMount: function() {
@@ -70,45 +102,43 @@ var RestSearch = createReactClass({
     render: function(){
         return(
             <div className="container">
-                <RestInput onChange={this.onChange} onClick={this.getRest} value={this.state.search}/>
-                <RestResult defaultValue={this.state.result}/>
-                <ReShuffle onClick={this.getRest} value={this.state.result.isResultShown} />
-            </div>
-        )
-    }
-})
-
-var RestResult = createReactClass({
-    
-    getInitialState: function(){
-        return {isShown: false}
-    },
-
-    render: function(){
-        var result = this.props.defaultValue;
-        return(
-            <div className="card fade-in-up" style={{display: result.isResultShown ? 'block' : 'none'}}>
-                <div className="result-group" >
-                    <div className="img">
-                        <img src={result.res ? result.res.featured_image : ''}/>
-                    </div>
-                </div>
-                <div className="result-group">
-                    <div className="store name">
-                        <h3>{result.res ? result.res.name : 'Name'}</h3>
-                    </div>
-                    <div className="store location">
-                        <p>{result.res ? result.res.location.address : 'Location'}</p>
-                    </div>
-                    <div className="store rating" style={{backgroundColor: `#${result.res ? result.res.user_rating.rating_color:'000'}`}}>
-                        <p>{result.res ? result.res.user_rating.aggregate_rating : '5'}</p>
-                        <p>votes {result.res ? result.res.user_rating.votes : '1'}</p>
+                <RestInput onClick={this.getRestId} value={this.state.search}/>
+                {this.state.resComponent}
+                <div className="card card--transparent" style={{display: this.state.result.isResultShown ? 'block' : 'none'}}>
+                    <div className="input-group">
+                        <button className="input button btn-reverse" onClick={this.traverseRestaurantIds}>Suggest More!</button>
                     </div>
                 </div>
             </div>
         )
     }
 })
+
+
+function RestResult(props) {
+    var result = props.defaultValue;
+    return(
+        <div className="card fade-in-up" style={{display: result.isResultShown ? 'block' : 'none'}}>
+            <div className="result-group" >
+                <div className="img">
+                    <img src={result.resDetail.featured_image}/>
+                </div>
+            </div>
+            <div className="result-group">
+                <div className="store name">
+                    <h3>{result.resDetail.name }</h3>
+                </div>
+                <div className="store location">
+                    <p>{result.resDetail.location.address }</p>
+                </div>
+                <div className="store rating" style={{backgroundColor: `#${result.resDetail.user_rating.rating_color}`}}>
+                    <p>{result.resDetail.user_rating.aggregate_rating}</p>
+                    <p>votes {result.resDetail.user_rating.votes}</p>
+                </div>
+            </div>
+        </div>
+    )
+}
 
 var RestInput = createReactClass({
 
