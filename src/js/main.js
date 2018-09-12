@@ -41,12 +41,12 @@ var RestSearch = createReactClass({
                 isResultShown: false,
                 traverseId: 0
             },
+            resComponent:  null
         }
     },
 
     getRestId: function(){
         this.setState({search: {isSearchShown: false}});
-        this.setState({result: {isResultShown: false}});
         getData(ZOMATO_API+'search?entity_type=city&q='+this.state.search.srch+'&count=10&lat='+city.lat+'&lon='+city.lon+'&sort=rating&order=desc')
         .then(data => {
             console.log(data);
@@ -54,8 +54,12 @@ var RestSearch = createReactClass({
             data.restaurants.forEach((restaurant) => {
                 resId.push(restaurant.restaurant.id);
             });
-            this.setState({result: {res: resId, isResultShown: true, traverseId: 0}});
-            this.getRestDetails(this.state.result.res[0])
+            var result = Object.assign({}, this.state.result);
+            result.res = resId;
+            result.isResultShown = true;
+            this.setState({result: result});
+
+            this.getRestDetails(this.state.result.res[this.state.result.traverseId]);
         })
     },
 
@@ -65,18 +69,30 @@ var RestSearch = createReactClass({
         .then(data => {
             console.log(data);
             var r = data;
-            var result = Object.assign({}, this.state.result);   
+            var result = Object.assign({}, this.state.result); 
+            result.isResultShown = true;  
             result.resDetail = r;                        
             this.setState({result: result});
             console.log(this.state.result)
+            this.setState({resComponent: <RestResult defaultValue={this.state.result}/>});
         })
     },
 
-    handleTraverse: function(){
+    traverseRestaurantIds: function(){
         var result = Object.assign({}, this.state.result);
-        this.getRestDetails(this.state.result.res[result.traverseId]);  
-        result.traverseId = result.traverseId + 1;                        
-        this.setState({result});
+        result.isResultShown = false;
+        if(result.traverseId == result.res.length){
+            console.log("here")
+            result.traverseId = 0; 
+            this.setState({result: result});
+            this.getRestDetails(this.state.result.res[result.traverseId]);
+        }
+        else{
+            result.traverseId = result.traverseId + 1; 
+            this.setState({result: result});
+            this.getRestDetails(this.state.result.res[result.traverseId]);
+        }                       
+        
     },
 
     componentWillMount: function() {
@@ -87,10 +103,10 @@ var RestSearch = createReactClass({
         return(
             <div className="container">
                 <RestInput onClick={this.getRestId} value={this.state.search}/>
-                <RestResult defaultValue={this.state.result}/>
+                {this.state.resComponent}
                 <div className="card card--transparent" style={{display: this.state.result.isResultShown ? 'block' : 'none'}}>
                     <div className="input-group">
-                        <button className="input button btn-reverse" onClick={this.handleTraverse}>Suggest More!</button>
+                        <button className="input button btn-reverse" onClick={this.traverseRestaurantIds}>Suggest More!</button>
                     </div>
                 </div>
             </div>
@@ -100,35 +116,28 @@ var RestSearch = createReactClass({
 
 
 function RestResult(props) {
-    console.log("Value:", props);
-    if(props.res != null){
-        return(
-            <div className="card fade-in-up" style={{display: props.defaultValue.isResultShown ? 'block' : 'none'}}>
-                <div className="result-group" >
-                    <div className="img">
-                        <img src={props.defaultValue.resDetail.featured_image}/>
-                    </div>
-                </div>
-                <div className="result-group">
-                    <div className="store name">
-                        <h3>{props.defaultValue.resDetail.name }</h3>
-                    </div>
-                    <div className="store location">
-                        <p>{props.defaultValue.resDetail.location.address }</p>
-                    </div>
-                    <div className="store rating" style={{backgroundColor: `#${props.defaultValue.resDetail.user_rating.rating_color}`}}>
-                        <p>{props.defaultValue.resDetail.user_rating.aggregate_rating}</p>
-                        <p>votes {props.defaultValue.resDetail.user_rating.votes}</p>
-                    </div>
+    var result = props.defaultValue;
+    return(
+        <div className="card fade-in-up" style={{display: result.isResultShown ? 'block' : 'none'}}>
+            <div className="result-group" >
+                <div className="img">
+                    <img src={result.resDetail.featured_image}/>
                 </div>
             </div>
-        )
-    }
-    else{
-        return(
-            <div>Error</div>
-        )
-    }
+            <div className="result-group">
+                <div className="store name">
+                    <h3>{result.resDetail.name }</h3>
+                </div>
+                <div className="store location">
+                    <p>{result.resDetail.location.address }</p>
+                </div>
+                <div className="store rating" style={{backgroundColor: `#${result.resDetail.user_rating.rating_color}`}}>
+                    <p>{result.resDetail.user_rating.aggregate_rating}</p>
+                    <p>votes {result.resDetail.user_rating.votes}</p>
+                </div>
+            </div>
+        </div>
+    )
 }
 
 var RestInput = createReactClass({
