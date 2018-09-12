@@ -36,7 +36,8 @@ var RestSearch = createReactClass({
                 isSearchShown: true
             }, 
             result: {
-                res: ['17272778'], 
+                res: [], 
+                resDetail: null,
                 isResultShown: false,
                 traverseId: 0
             },
@@ -53,17 +54,30 @@ var RestSearch = createReactClass({
             data.restaurants.forEach((restaurant) => {
                 resId.push(restaurant.restaurant.id);
             });
-            console.log("resId: "+ resId);
             this.setState({result: {res: resId, isResultShown: true, traverseId: 0}});
+            this.getRestDetails(this.state.result.res[0])
         })
     },
 
-    Traverse: function(id){
-        var result = Object.assign({}, this.state.result);    //creating copy of object
-        result.traverseId = id;                        //updating value
-        this.setState({result});
+    getRestDetails: function(resId){
+        console.log(resId);
+        getData(ZOMATO_API+'restaurant?res_id='+resId)
+        .then(data => {
+            console.log(data);
+            var r = data;
+            var result = Object.assign({}, this.state.result);   
+            result.resDetail = r;                        
+            this.setState({result: result});
+            console.log(this.state.result)
+        })
     },
 
+    handleTraverse: function(){
+        var result = Object.assign({}, this.state.result);
+        this.getRestDetails(this.state.result.res[result.traverseId]);  
+        result.traverseId = result.traverseId + 1;                        
+        this.setState({result});
+    },
 
     componentWillMount: function() {
         getLocation();
@@ -74,86 +88,48 @@ var RestSearch = createReactClass({
             <div className="container">
                 <RestInput onClick={this.getRestId} value={this.state.search}/>
                 <RestResult defaultValue={this.state.result}/>
-                <Traverse updateTraverse={this.Traverse} value={this.state.result}/>
-            </div>
-        )
-    }
-})
-
-var Traverse = createReactClass({
-
-    getInitialState: function(){
-        return {traverseId: 0}
-    },
-
-    handleTraverse: function(){
-        console.log("here");
-        this.props.updateTraverse(this.state.traverseId);
-        this.setState({traverseId: this.state.traverseId + 1})
-    },
-
-    render: function(){
-        var value = this.props.value;
-        value.traverseId = this.state.traverseId;
-        return(
-            <div className="card card--transparent" style={{display: value.isResultShown ? 'block' : 'none'}}>
-                <div className="input-group">
-                    <button className="input button btn-reverse" onClick={this.handleTraverse}>Suggest More!</button>
+                <div className="card card--transparent" style={{display: this.state.result.isResultShown ? 'block' : 'none'}}>
+                    <div className="input-group">
+                        <button className="input button btn-reverse" onClick={this.handleTraverse}>Suggest More!</button>
+                    </div>
                 </div>
             </div>
         )
     }
 })
 
-var RestResult = createReactClass({
-    
-    getInitialState: function(){
-        return {isShown: false, restaurant: null}
-    },
 
-    getRestDetails: function(resId){
-        console.log(resId);
-        getData(ZOMATO_API+'restaurant?res_id='+resId)
-        .then(data => {
-            console.log(data);
-            var r = data;
-            this.setState({restaurant: r})
-        })
-    },
-
-    componentWillMount: function(){
-        var id = this.props.defaultValue.traverseId;
-        this.getRestDetails(this.props.defaultValue.res[id]);
-    },
-
-    render: function(){
-        var result = this.props.defaultValue;
-        // var rest = this.state.restaurant;
-        console.log(result);
-        this.getRestDetails(this.props.defaultValue.res[this.props.defaultValue.traverseId]);
+function RestResult(props) {
+    console.log("Value:", props);
+    if(props.res != null){
         return(
-            <div className="card fade-in-up" style={{display: result.isResultShown ? 'block' : 'none'}}>
+            <div className="card fade-in-up" style={{display: props.defaultValue.isResultShown ? 'block' : 'none'}}>
                 <div className="result-group" >
                     <div className="img">
-                        <img src={this.state.restaurant ? this.state.restaurant.featured_image : ''}/>
+                        <img src={props.defaultValue.resDetail.featured_image}/>
                     </div>
                 </div>
                 <div className="result-group">
                     <div className="store name">
-                        <h3>{this.state.restaurant ? this.state.restaurant.name : 'Name'}</h3>
+                        <h3>{props.defaultValue.resDetail.name }</h3>
                     </div>
                     <div className="store location">
-                        <p>{this.state.restaurant ? this.state.restaurant.location.address : 'Location'}</p>
+                        <p>{props.defaultValue.resDetail.location.address }</p>
                     </div>
-                    <div className="store rating" style={{backgroundColor: `#${this.state.restaurant ? this.state.restaurant.user_rating.rating_color:'000'}`}}>
-                        <p>{this.state.restaurant ? this.state.restaurant.user_rating.aggregate_rating : '5'}</p>
-                        <p>votes {this.state.restaurant ? this.state.restaurant.user_rating.votes : '1'}</p>
+                    <div className="store rating" style={{backgroundColor: `#${props.defaultValue.resDetail.user_rating.rating_color}`}}>
+                        <p>{props.defaultValue.resDetail.user_rating.aggregate_rating}</p>
+                        <p>votes {props.defaultValue.resDetail.user_rating.votes}</p>
                     </div>
                 </div>
             </div>
         )
     }
-})
+    else{
+        return(
+            <div>Error</div>
+        )
+    }
+}
 
 var RestInput = createReactClass({
 
