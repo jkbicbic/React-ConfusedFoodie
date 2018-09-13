@@ -49,7 +49,6 @@ var RestSearch = createReactClass({
         this.setState({search: {isSearchShown: false}});
         getData(ZOMATO_API+'search?entity_type=city&q='+this.state.search.srch+'&count=10&lat='+city.lat+'&lon='+city.lon+'&sort=rating&order=desc')
         .then(data => {
-            console.log(data);
             var resId = [];
             data.restaurants.forEach((restaurant) => {
                 resId.push(restaurant.restaurant.id);
@@ -58,22 +57,18 @@ var RestSearch = createReactClass({
             result.res = resId;
             result.isResultShown = true;
             this.setState({result: result});
-
             this.getRestDetails(this.state.result.res[this.state.result.traverseId]);
         })
     },
 
     getRestDetails: function(resId){
-        console.log(resId);
         getData(ZOMATO_API+'restaurant?res_id='+resId)
         .then(data => {
-            console.log(data);
             var r = data;
             var result = Object.assign({}, this.state.result); 
             result.isResultShown = true;  
             result.resDetail = r;                        
             this.setState({result: result});
-            console.log(this.state.result)
             this.setState({resComponent: <RestResult defaultValue={this.state.result}/>});
         })
     },
@@ -81,8 +76,7 @@ var RestSearch = createReactClass({
     traverseRestaurantIds: function(){
         var result = Object.assign({}, this.state.result);
         result.isResultShown = false;
-        if(result.traverseId == result.res.length){
-            console.log("here")
+        if(result.traverseId == result.res.length - 1){
             result.traverseId = 0; 
             this.setState({result: result});
             this.getRestDetails(this.state.result.res[result.traverseId]);
@@ -107,6 +101,9 @@ var RestSearch = createReactClass({
                 <div className="card card--transparent" style={{display: this.state.result.isResultShown ? 'block' : 'none'}}>
                     <div className="input-group">
                         <button className="input button btn-reverse" onClick={this.traverseRestaurantIds}>Suggest More!</button>
+                    </div>
+                    <div className="input-group">
+                        <button className="input button btn-reverse" onClick={this.traverseRestaurantIds}>Search another craving</button>
                     </div>
                 </div>
             </div>
