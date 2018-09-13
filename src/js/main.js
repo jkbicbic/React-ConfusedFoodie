@@ -89,12 +89,6 @@ var RestSearch = createReactClass({
     },
 
     handleSearch: function(){
-        // var search = Object.assign({}, this.state.search);
-        // var result = Object.assign({}, this.state.result);
-        // result.isResultShown = false;
-        // search.isSearchShown = true;
-        // this.setState({search: search});
-        // this.setState({result: result});
         this.setState({search: {srch: null, isSearchShown: true}});
         this.setState({result: {res: [], resDetail: null, isResultShown: false, traverseId: 0}});
     },
@@ -122,14 +116,57 @@ var RestSearch = createReactClass({
 })
 
 
+var ImageFitter = createReactClass({
+    getInitialState: function(){
+        return {parentHeight: 0}
+    },
+
+    componentDidMount: function(){
+        var img = document.getElementById('img');
+        var nH, nW;
+        img.onload = function(){
+            nH = img.naturalHeight;
+            nW = img.naturalWidth;
+            this.calculateHW(nH, nW);
+        }.bind(this);
+    },
+
+    calculateHW: function(nH, nW){
+        if(nH > nW){
+            this.setElementAttribute(img, 'horzimg','top:')
+        }
+        else{
+            this.setElementAttribute(img, 'vertimg','left:')
+        }
+    },
+
+    setElementAttribute: function(img, cl,stl){
+        var par = document.getElementById('prof');var att = document.createAttribute('class');var style = document.createAttribute('style');
+        att.value = cl;
+        img.setAttributeNode(att);
+        var offset = (img.height - par.clientHeight)/2;
+        style.value = stl+offset*-1+'px';
+        img.setAttributeNode(style);
+        this.setState({parentHeight: par.clientWidth});
+    },
+
+    render: function(){
+        return (
+            <div id='prof' className="restimage" style={{width: this.props.width,height: this.state.parentHeight}}>
+                <img id='img' src={this.props.src} alt="" />
+            </div>
+        )
+    }
+})
+
+
+
 function RestResult(props) {
     var result = props.defaultValue;
     return(
         <div className="card fade-in-up" style={{display: props.defaultValue.isResultShown ? 'block' : 'none'}}>
             <div className="result-group" >
-                <div className="img">
-                    <img src={result.resDetail.featured_image}/>
-                </div>
+                <ImageFitter src={result.resDetail.featured_image} width={'100%'} />
             </div>
             <div className="result-group">
                 <div className="store name">
@@ -193,6 +230,8 @@ var RestInput = createReactClass({
         )
     }
 })
+
+
 
 
 ReactDOM.render(<RestSearch />, document.getElementById("app"))
