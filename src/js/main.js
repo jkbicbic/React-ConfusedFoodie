@@ -75,7 +75,6 @@ var RestSearch = createReactClass({
 
     traverseRestaurantIds: function(){
         var result = Object.assign({}, this.state.result);
-        result.isResultShown = false;
         if(result.traverseId == result.res.length - 1){
             result.traverseId = 0; 
             this.setState({result: result});
@@ -87,6 +86,17 @@ var RestSearch = createReactClass({
             this.getRestDetails(this.state.result.res[result.traverseId]);
         }                       
         
+    },
+
+    handleSearch: function(){
+        // var search = Object.assign({}, this.state.search);
+        // var result = Object.assign({}, this.state.result);
+        // result.isResultShown = false;
+        // search.isSearchShown = true;
+        // this.setState({search: search});
+        // this.setState({result: result});
+        this.setState({search: {srch: null, isSearchShown: true}});
+        this.setState({result: {res: [], resDetail: null, isResultShown: false, traverseId: 0}});
     },
 
     componentWillMount: function() {
@@ -103,7 +113,7 @@ var RestSearch = createReactClass({
                         <button className="input button btn-reverse" onClick={this.traverseRestaurantIds}>Suggest More!</button>
                     </div>
                     <div className="input-group">
-                        <button className="input button btn-reverse" onClick={this.traverseRestaurantIds}>Search another craving</button>
+                        <button className="input button btn-reverse" onClick={this.handleSearch}>Search another craving</button>
                     </div>
                 </div>
             </div>
@@ -115,7 +125,7 @@ var RestSearch = createReactClass({
 function RestResult(props) {
     var result = props.defaultValue;
     return(
-        <div className="card fade-in-up" style={{display: result.isResultShown ? 'block' : 'none'}}>
+        <div className="card fade-in-up" style={{display: props.defaultValue.isResultShown ? 'block' : 'none'}}>
             <div className="result-group" >
                 <div className="img">
                     <img src={result.resDetail.featured_image}/>
