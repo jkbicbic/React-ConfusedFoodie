@@ -152,7 +152,7 @@ var ImageFitter = createReactClass({
 
     render: function(){
         return (
-            <div id='prof' className="restimage" style={{height: this.state.parentHeight}}>
+            <div id='prof' className="restimage" style={{width: this.props.width,height: this.state.parentHeight}}>
                 <img id='img' src={this.props.src} alt="" />
             </div>
         )
@@ -166,7 +166,7 @@ function RestResult(props) {
     return(
         <div className="card fade-in-up" style={{display: props.defaultValue.isResultShown ? 'block' : 'none'}}>
             <div className="result-group" >
-                <ImageFitter src={result.resDetail.featured_image} />
+                <ImageFitter src={result.resDetail.featured_image} width={'100%'} />
             </div>
             <div className="result-group">
                 <div className="store name">
